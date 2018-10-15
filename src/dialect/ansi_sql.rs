@@ -1,6 +1,7 @@
 use dialect::Dialect;
 
 use dialect::keywords::*;
+use sqlast::ASTNode;
 
 pub struct AnsiSqlDialect {}
 
@@ -343,5 +344,9 @@ impl Dialect for AnsiSqlDialect {
             || (ch >= 'A' && ch <= 'Z')
             || (ch >= '0' && ch <= '9')
             || ch == '_'
+    }
+
+    fn ast_to_string(&self, ast: &ASTNode) -> String {
+        panic!("not yet implemented")
     }
 }

@@ -18,12 +18,15 @@ mod sql_operator;
 mod sqltype;
 mod table_key;
 mod value;
+mod to_sql;
 
 pub use self::sqltype::SQLType;
 pub use self::table_key::{AlterOperation, Key, TableKey};
 pub use self::value::Value;
 
 pub use self::sql_operator::SQLOperator;
+use dialect::Dialect;
+pub use self::to_sql::ToSql;
 
 /// SQL Abstract Syntax Tree (AST)
 #[derive(Debug, Clone, PartialEq)]
@@ -127,6 +130,14 @@ pub enum ASTNode {
     },
 }
 
+impl ToSql for ASTNode {
+
+    fn to_sql(&self, dialect: &Dialect) -> String {
+        dialect.ast_to_string(&self)
+    }
+}
+
+/*
 impl ToString for ASTNode {
     fn to_string(&self) -> String {
         match self {
@@ -315,6 +326,7 @@ impl ToString for ASTNode {
         }
     }
 }
+*/
 
 /// SQL assignment `foo = expr` as used in SQLUpdate
 /// TODO: unify this with the ASTNode SQLAssignment
@@ -324,17 +336,32 @@ pub struct SQLAssignment {
     value: Box<ASTNode>,
 }
 
+impl ToSql for SQLAssignment{
+
+    fn to_sql(&self, dialect: &Dialect) -> String {
+        dialect.assignment_to_string(&self)
+    }
+}
+
+/*
 impl ToString for SQLAssignment {
     fn to_string(&self) -> String {
         format!("SET {} = {}", self.id, self.value.as_ref().to_string())
     }
 }
+*/
 
 /// SQL ORDER BY expression
 #[derive(Debug, Clone, PartialEq)]
 pub struct SQLOrderByExpr {
     pub expr: Box<ASTNode>,
     pub asc: bool,
+}
+
+impl ToSql for SQLOrderByExpr{
+    fn to_sql(&self, dialect: &Dialect) -> String {
+        dialect.sql_order_by_to_string(self)
+    }
 }
 
 impl SQLOrderByExpr {

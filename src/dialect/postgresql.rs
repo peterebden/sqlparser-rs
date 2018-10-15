@@ -1,6 +1,7 @@
 use dialect::Dialect;
 
 use dialect::keywords::*;
+use sqlast::ASTNode;
 
 pub struct PostgreSqlDialect {}
 
@@ -28,4 +29,45 @@ impl Dialect for PostgreSqlDialect {
             || ch == '@'
             || ch == '_'
     }
+
+    fn ast_to_string(&self, ast: &ASTNode) -> String {
+        ast.to_string()
+    }
+
 }
+
+#[cfg(test)]
+mod test{
+
+use crate::dialect::{
+    Dialect,
+    PostgreSqlDialect};
+use crate::sqlast::*;
+use crate::sqlparser::*;
+use crate::sqltokenizer::*;
+
+    #[test]
+    fn parse_simple_select() {
+        let sql = String::from("SELECT id, fname, lname FROM customer WHERE id = 1 LIMIT 5");
+        let pg = PostgreSqlDialect {};
+        let ast = parse_sql(&sql, &pg);
+        let to_sql = pg.ast_to_string(&ast);
+        println!("sql: {}", sql);
+        assert_eq!(sql, to_sql);
+    }
+
+    fn parse_sql(sql: &str, dialect: &Dialect) -> ASTNode {
+        debug!("sql: {}", sql);
+        let mut parser = parser(sql, dialect);
+        let ast = parser.parse().unwrap();
+        ast
+    }
+
+    fn parser(sql: &str, dialect: &Dialect) -> Parser {
+        let mut tokenizer = Tokenizer::new(dialect, &sql);
+        let tokens = tokenizer.tokenize().unwrap();
+        debug!("tokens: {:#?}", tokens);
+        Parser::new(tokens)
+    }
+}
+
