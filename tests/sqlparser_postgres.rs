@@ -4,14 +4,17 @@ extern crate sqlparser;
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::sqlast::*;
 use sqlparser::sqlparser::*;
+use sqlparser::to_sql::ToSql;
 use sqlparser::sqltokenizer::*;
+use sqlparser::dialect::Dialect;
 
 use log::*;
 
 #[test]
 fn test_prev_index() {
     let sql: &str = "SELECT version()";
-    let mut parser = parser(sql);
+    let pg = PostgreSqlDialect {};
+    let mut parser = parser(sql, &pg);
     assert_eq!(parser.prev_token(), None);
     assert_eq!(parser.next_token(), Some(Token::Keyword("SELECT".into())));
     assert_eq!(
@@ -34,7 +37,8 @@ fn test_prev_index() {
 fn parse_delete_statement() {
     let sql: &str = "DELETE FROM 'table'";
     let ast = parse_sql(sql);
-    assert_eq!("DELETE FROM 'table'", ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!("DELETE FROM 'table'", ast.to_sql(&pg));
 
     match parse_sql(&sql) {
         ASTNode::SQLDelete { relation, .. } => {
@@ -55,7 +59,8 @@ fn parse_where_delete_statement() {
     let sql: &str = "DELETE FROM 'table' WHERE name = 5";
     let ast = parse_sql(sql);
     println!("ast: {:#?}", ast);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
 
     use self::ASTNode::*;
     use self::SQLOperator::*;
@@ -91,7 +96,8 @@ fn parse_where_delete_statement() {
 fn parse_simple_select() {
     let sql = String::from("SELECT id, fname, lname FROM customer WHERE id = 1 LIMIT 5");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect {
             projection, limit, ..
@@ -107,7 +113,8 @@ fn parse_simple_select() {
 fn parse_simple_insert() {
     let sql = String::from("INSERT INTO customer VALUES(1, 2, 3)");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLInsert {
             table_name,
@@ -134,7 +141,8 @@ fn parse_simple_insert() {
 fn parse_common_insert() {
     let sql = String::from("INSERT INTO public.customer VALUES(1, 2, 3)");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLInsert {
             table_name,
@@ -161,7 +169,8 @@ fn parse_common_insert() {
 fn parse_complex_insert() {
     let sql = String::from("INSERT INTO db.public.customer VALUES(1, 2, 3)");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLInsert {
             table_name,
@@ -186,7 +195,8 @@ fn parse_complex_insert() {
 
 #[test]
 fn parse_invalid_table_name() {
-    let mut parser = parser("db.public..customer");
+    let pg = PostgreSqlDialect {};
+    let mut parser = parser("db.public..customer", &pg);
     let ast = parser.parse_tablename();
     assert!(ast.is_err());
 }
@@ -195,7 +205,8 @@ fn parse_invalid_table_name() {
 fn parse_insert_with_columns() {
     let sql = String::from("INSERT INTO public.customer (id, name, active) VALUES(1, 2, 3)");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLInsert {
             table_name,
@@ -225,7 +236,8 @@ fn parse_insert_with_columns() {
 fn parse_select_wildcard() {
     let sql = String::from("SELECT * FROM customer");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect { projection, .. } => {
             assert_eq!(1, projection.len());
@@ -239,7 +251,8 @@ fn parse_select_wildcard() {
 fn parse_select_count_wildcard() {
     let sql = String::from("SELECT COUNT(*) FROM customer");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect { projection, .. } => {
             assert_eq!(1, projection.len());
@@ -262,14 +275,16 @@ fn parse_select_string_predicate() {
          WHERE salary != 'Not Provided' AND salary != ''",
     );
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
 }
 
 #[test]
 fn parse_projection_nested_type() {
     let sql = String::from("SELECT customer.address.state FROM foo");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
 }
 
 #[test]
@@ -278,7 +293,8 @@ fn parse_compound_expr_1() {
     use self::SQLOperator::*;
     let sql = String::from("a + b * c");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     assert_eq!(
         SQLBinaryExpr {
             left: Box::new(SQLIdentifier("a".to_string())),
@@ -299,7 +315,8 @@ fn parse_compound_expr_2() {
     use self::SQLOperator::*;
     let sql = String::from("a * b + c");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     assert_eq!(
         SQLBinaryExpr {
             left: Box::new(SQLBinaryExpr {
@@ -319,7 +336,8 @@ fn parse_is_null() {
     use self::ASTNode::*;
     let sql = String::from("a IS NULL");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     assert_eq!(SQLIsNull(Box::new(SQLIdentifier("a".to_string()))), ast);
 }
 
@@ -328,7 +346,8 @@ fn parse_is_not_null() {
     use self::ASTNode::*;
     let sql = String::from("a IS NOT NULL");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     assert_eq!(SQLIsNotNull(Box::new(SQLIdentifier("a".to_string()))), ast);
 }
 
@@ -338,7 +357,8 @@ fn parse_select_order_by() {
         "SELECT id, fname, lname FROM customer WHERE id < 5 ORDER BY lname ASC, fname DESC",
     );
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect { order_by, .. } => {
             assert_eq!(
@@ -363,7 +383,8 @@ fn parse_select_order_by() {
 fn parse_select_group_by() {
     let sql = String::from("SELECT id, fname, lname FROM customer GROUP BY lname, fname");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect { group_by, .. } => {
             assert_eq!(
@@ -383,7 +404,8 @@ fn parse_limit_accepts_all() {
     let sql = String::from("SELECT id, fname, lname FROM customer WHERE id = 1 LIMIT ALL");
     let expected = String::from("SELECT id, fname, lname FROM customer WHERE id = 1");
     let ast = parse_sql(&sql);
-    assert_eq!(expected, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(expected, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect {
             projection, limit, ..
@@ -399,7 +421,8 @@ fn parse_limit_accepts_all() {
 fn parse_cast() {
     let sql = String::from("SELECT CAST(id AS bigint) FROM customer");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect { projection, .. } => {
             assert_eq!(1, projection.len());
@@ -430,7 +453,8 @@ fn parse_create_table() {
          lng double)",
     );
     let ast = parse_sql(&sql);
-    assert_eq!(expected, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(expected, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLCreateTable { name, columns } => {
             assert_eq!("uk_cities", name);
@@ -548,7 +572,8 @@ fn parse_create_table_with_inherit() {
          )",
     );
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLCreateTable { name, columns } => {
             assert_eq!("bazaar.settings", name);
@@ -580,7 +605,8 @@ fn parse_alter_table_constraint_primary_key() {
     );
     let ast = parse_sql(&sql);
     println!("ast: {:?}", ast);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLAlterTable { name, .. } => {
             assert_eq!(name, "bazaar.address");
@@ -595,7 +621,8 @@ fn parse_alter_table_constraint_foreign_key() {
     ALTER TABLE public.customer \
         ADD CONSTRAINT customer_address_id_fkey FOREIGN KEY (address_id) REFERENCES public.address(address_id)");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     println!("ast: {:?}", ast);
     match ast {
         ASTNode::SQLAlterTable { name, .. } => {
@@ -636,7 +663,8 @@ PHP	₱ USD $
 fn parse_timestamps_example() {
     let sql = "2016-02-15 09:43:33";
     let ast = parse_sql(sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
 }
 
 #[test]
@@ -649,14 +677,16 @@ fn parse_timestamps_with_millis_example() {
 fn parse_example_value() {
     let sql = "SARAH.LEWIS@sakilacustomer.org";
     let ast = parse_sql(sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
 }
 
 #[test]
 fn parse_scalar_function_in_projection() {
     let sql = String::from("SELECT sqrt(id) FROM foo");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     if let ASTNode::SQLSelect { projection, .. } = ast {
         assert_eq!(
             vec![ASTNode::SQLFunction {
@@ -674,14 +704,16 @@ fn parse_scalar_function_in_projection() {
 fn parse_aggregate_with_group_by() {
     let sql = String::from("SELECT a, COUNT(1), MIN(b), MAX(b) FROM foo GROUP BY a");
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
 }
 
 #[test]
 fn parse_literal_string() {
     let sql = "SELECT 'one'";
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect { ref projection, .. } => {
             assert_eq!(
@@ -697,7 +729,8 @@ fn parse_literal_string() {
 fn parse_select_version() {
     let sql = "SELECT @@version";
     let ast = parse_sql(&sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
     match ast {
         ASTNode::SQLSelect { ref projection, .. } => {
             assert_eq!(
@@ -713,19 +746,21 @@ fn parse_select_version() {
 fn parse_function_now() {
     let sql = "now()";
     let ast = parse_sql(sql);
-    assert_eq!(sql, ast.to_string());
+    let pg = PostgreSqlDialect {};
+    assert_eq!(sql, ast.to_sql(&pg));
 }
+
 
 fn parse_sql(sql: &str) -> ASTNode {
     debug!("sql: {}", sql);
-    let mut parser = parser(sql);
+    let dialect = PostgreSqlDialect {};
+    let mut parser = parser(sql, &dialect);
     let ast = parser.parse().unwrap();
     ast
 }
 
-fn parser(sql: &str) -> Parser {
-    let dialect = PostgreSqlDialect {};
-    let mut tokenizer = Tokenizer::new(&dialect, &sql);
+fn parser(sql: &str, dialect: &Dialect) -> Parser {
+    let mut tokenizer = Tokenizer::new(dialect, &sql);
     let tokens = tokenizer.tokenize().unwrap();
     debug!("tokens: {:#?}", tokens);
     Parser::new(tokens)

@@ -1,8 +1,19 @@
+use to_sql::ToSql;
+use dialect::Dialect;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum AlterOperation {
     AddConstraint(TableKey),
     RemoveConstraint { name: String },
 }
+
+impl ToSql for AlterOperation {
+
+    fn to_sql(&self, dialect: &Dialect) -> String {
+        dialect.alter_operation_to_string(self)
+    }
+}
+
 
 impl ToString for AlterOperation {
     fn to_string(&self) -> String {
@@ -31,6 +42,13 @@ pub enum TableKey {
         foreign_table: String,
         referred_columns: Vec<String>,
     },
+}
+
+impl ToSql for TableKey {
+
+    fn to_sql(&self, dialect: &Dialect) -> String {
+        dialect.table_key_to_string(self)
+    }
 }
 
 impl ToString for TableKey {

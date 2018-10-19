@@ -1,7 +1,15 @@
 use dialect::Dialect;
 
 use dialect::keywords::*;
-use sqlast::ASTNode;
+use dialect::generic_sql::GenericSqlDialect;
+use sqlast::{
+    ASTNode,
+    SQLAssignment,
+    SQLColumnDef,
+    SQLOrderByExpr,
+    AlterOperation,
+    TableKey,
+};
 
 pub struct PostgreSqlDialect {}
 
@@ -31,7 +39,28 @@ impl Dialect for PostgreSqlDialect {
     }
 
     fn ast_to_string(&self, ast: &ASTNode) -> String {
-        ast.to_string()
+        let dialect = GenericSqlDialect {};
+        dialect.ast_to_string(ast)
+    }
+
+    fn assignment_to_string(&self, ass: &SQLAssignment) -> String {
+        panic!("not yet implemented")
+    }
+
+    fn column_def_to_string(&self, column_def: &SQLColumnDef) -> String {
+        panic!("not yet implemented")
+    }
+
+    fn order_by_to_string(&self, order_by: &SQLOrderByExpr) -> String {
+        panic!("not yet implemented")
+    }
+
+    fn alter_operation_to_string(&self, alter_op: &AlterOperation) -> String {
+        panic!("not yet implemented")
+    }
+
+    fn table_key_to_string(&self, table_key: &TableKey) -> String {
+        panic!("not yet implemented")
     }
 
 }

@@ -44,3 +44,4 @@ pub mod dialect;
 pub mod sqlast;
 pub mod sqlparser;
 pub mod sqltokenizer;
+pub mod to_sql;

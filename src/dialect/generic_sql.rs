@@ -1,8 +1,15 @@
 use dialect::Dialect;
 
 use dialect::keywords::*;
-use sqlast::ASTNode;
-use sqlast::ToSql;
+use to_sql::ToSql;
+use sqlast::{
+    ASTNode,
+    SQLAssignment,
+    SQLColumnDef,
+    SQLOrderByExpr,
+    AlterOperation,
+    TableKey,
+};
 
 pub struct GenericSqlDialect {}
 
@@ -214,6 +221,67 @@ impl Dialect for GenericSqlDialect {
             ASTNode::SQLAlterTable { name, operation } => {
                 format!("ALTER TABLE {} {}", name, operation.to_sql(self))
             }
+        }
+    }
+
+    fn assignment_to_string(&self, ass: &SQLAssignment) -> String {
+        format!("SET {} = {}", ass.id, ass.value.to_sql(self))
+    }
+
+    fn column_def_to_string(&self, column_def: &SQLColumnDef) -> String {
+        let mut s = format!("{} {}", column_def.name, column_def.data_type.to_string());
+        if column_def.is_primary {
+            s += " PRIMARY KEY";
+        }
+        if column_def.is_unique {
+            s += " UNIQUE";
+        }
+        if let Some(ref default) = column_def.default {
+            s += &format!(" DEFAULT {}", default.to_sql(self));
+        }
+        if !column_def.allow_null {
+            s += " NOT NULL";
+        }
+        s
+    }
+
+    fn order_by_to_string(&self, order_by: &SQLOrderByExpr) -> String {
+        if order_by.asc {
+            format!("{} ASC", order_by.expr.to_sql(self))
+        } else {
+            format!("{} DESC", order_by.expr.to_sql(self))
+        }
+    }
+
+    fn alter_operation_to_string(&self, alter_op: &AlterOperation) -> String {
+        match alter_op {
+            AlterOperation::AddConstraint(table_key) => {
+                format!("ADD CONSTRAINT {}", table_key.to_sql(self))
+            }
+            AlterOperation::RemoveConstraint { name } => format!("REMOVE CONSTRAINT {}", name),
+        }
+    }
+
+    fn table_key_to_string(&self, table_key: &TableKey) -> String {
+        match table_key {
+            TableKey::PrimaryKey(ref key) => {
+                format!("{} PRIMARY KEY ({})", key.name, key.columns.join(", "))
+            }
+            TableKey::UniqueKey(ref key) => {
+                format!("{} UNIQUE KEY ({})", key.name, key.columns.join(", "))
+            }
+            TableKey::Key(ref key) => format!("{} KEY ({})", key.name, key.columns.join(", ")),
+            TableKey::ForeignKey {
+                key,
+                foreign_table,
+                referred_columns,
+            } => format!(
+                "{} FOREIGN KEY ({}) REFERENCES {}({})",
+                key.name,
+                key.columns.join(", "),
+                foreign_table,
+                referred_columns.join(", ")
+            ),
         }
     }
 

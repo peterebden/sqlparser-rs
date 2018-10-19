@@ -18,7 +18,6 @@ mod sql_operator;
 mod sqltype;
 mod table_key;
 mod value;
-mod to_sql;
 
 pub use self::sqltype::SQLType;
 pub use self::table_key::{AlterOperation, Key, TableKey};
@@ -26,7 +25,7 @@ pub use self::value::Value;
 
 pub use self::sql_operator::SQLOperator;
 use dialect::Dialect;
-pub use self::to_sql::ToSql;
+use to_sql::ToSql;
 
 /// SQL Abstract Syntax Tree (AST)
 #[derive(Debug, Clone, PartialEq)]
@@ -332,8 +331,8 @@ impl ToString for ASTNode {
 /// TODO: unify this with the ASTNode SQLAssignment
 #[derive(Debug, Clone, PartialEq)]
 pub struct SQLAssignment {
-    id: String,
-    value: Box<ASTNode>,
+    pub id: String,
+    pub value: Box<ASTNode>,
 }
 
 impl ToSql for SQLAssignment{
@@ -360,7 +359,7 @@ pub struct SQLOrderByExpr {
 
 impl ToSql for SQLOrderByExpr{
     fn to_sql(&self, dialect: &Dialect) -> String {
-        dialect.sql_order_by_to_string(self)
+        dialect.order_by_to_string(self)
     }
 }
 
@@ -370,6 +369,7 @@ impl SQLOrderByExpr {
     }
 }
 
+/*
 impl ToString for SQLOrderByExpr {
     fn to_string(&self) -> String {
         if self.asc {
@@ -379,6 +379,7 @@ impl ToString for SQLOrderByExpr {
         }
     }
 }
+*/
 
 /// SQL column definition
 #[derive(Debug, Clone, PartialEq)]
@@ -391,6 +392,14 @@ pub struct SQLColumnDef {
     pub allow_null: bool,
 }
 
+impl ToSql for SQLColumnDef {
+
+    fn to_sql(&self, dialect: &Dialect) -> String {
+        dialect.column_def_to_string(self)
+    }
+}
+
+/*
 impl ToString for SQLColumnDef {
     fn to_string(&self) -> String {
         let mut s = format!("{} {}", self.name, self.data_type.to_string());
@@ -409,3 +418,4 @@ impl ToString for SQLColumnDef {
         s
     }
 }
+*/
