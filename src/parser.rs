@@ -861,8 +861,12 @@ impl Parser {
             self.parse_create_view()
         } else if self.parse_keyword("EXTERNAL") {
             self.parse_create_external_table()
+        } else if self.parse_keyword("INDEX") {
+            self.parse_create_index(false)
+        } else if self.parse_keywords(vec!["UNIQUE", "INDEX"]) {
+            self.parse_create_index(true)
         } else {
-            self.expected("TABLE or VIEW after CREATE", self.peek_token())
+            self.expected("TABLE, VIEW or INDEX after CREATE", self.peek_token())
         }
     }
 
@@ -904,6 +908,33 @@ impl Parser {
             query,
             materialized,
             with_options,
+        })
+    }
+
+    pub fn parse_create_index(&mut self, unique: bool) -> Result<Statement, ParserError> {
+        let concurrently = self.parse_keyword("CONCURRENTLY");
+        let name = self.parse_object_name()?;
+        self.expect_keyword("ON")?;
+        let table = self.parse_object_name()?;
+        let method = if self.parse_keyword("USING") {
+            Some(self.parse_identifier()?)
+        } else {
+            None
+        };
+        let columns = self.parse_parenthesized_column_list(Mandatory)?;
+        let selection = if self.parse_keyword("WHERE") {
+            Some(self.parse_expr()?)
+        } else {
+            None
+        };
+        Ok(Statement::CreateIndex {
+            name: name,
+            table: table,
+            unique: unique,
+            concurrently: concurrently,
+            method: method,
+            columns: columns,
+            selection: selection,
         })
     }
 

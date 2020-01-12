@@ -475,6 +475,23 @@ pub enum Statement {
         file_format: Option<FileFormat>,
         location: Option<String>,
     },
+    /// CREATE INDEX
+    CreateIndex {
+        /// Index name
+        name: ObjectName,
+        /// Table name
+        table: ObjectName,
+        /// An optional UNIQUE keyword
+        unique: bool,
+        /// An optional CONCURRENTLY keyword
+        concurrently: bool,
+        /// Optional method to use
+        method: Option<Ident>,
+        /// Columns to index
+        columns: Vec<Ident>,
+        /// WHERE
+        selection: Option<Expr>,
+    },
     /// ALTER TABLE
     AlterTable {
         /// Table name
@@ -649,6 +666,34 @@ impl fmt::Display for Statement {
                 }
                 if !with_options.is_empty() {
                     write!(f, " WITH ({})", display_comma_separated(with_options))?;
+                }
+                Ok(())
+            }
+            Statement::CreateIndex {
+                name,
+                table,
+                unique,
+                concurrently,
+                method,
+                columns,
+                selection,
+            } => {
+                write!(
+                    f,
+                    "CREATE {}INDEX{} {} ON {}",
+                    if *unique { "UNIQUE " } else { "" },
+                    name,
+                    if *concurrently { "CONCURRENTLY" } else { "" },
+                    table
+                )?;
+                if let Some(method) = method {
+                    write!(f, " USING {}", method)?;
+                };
+                if !columns.is_empty() {
+                    write!(f, " ({})", display_comma_separated(columns))?;
+                }
+                if let Some(selection) = selection {
+                    write!(f, " WHERE {}", selection)?;
                 }
                 Ok(())
             }
