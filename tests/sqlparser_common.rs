@@ -1209,6 +1209,35 @@ fn parse_alter_table_drop_column() {
 }
 
 #[test]
+fn parse_alter_table_rename_column() {
+    match verified_stmt("ALTER TABLE table RENAME COLUMN col1 TO col2") {
+        Statement::AlterTable {
+            name,
+            operation: AlterTableOperation::RenameColumn{column, to},
+        } => {
+            assert_eq!("table", name.to_string());
+            assert_eq!("col1", column.to_string());
+            assert_eq!("col2", to.to_string());
+        },
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn parse_alter_table_rename_table() {
+    match verified_stmt("ALTER TABLE table RENAME TO table2") {
+        Statement::AlterTable {
+            name,
+            operation: AlterTableOperation::RenameTable{to},
+        } => {
+            assert_eq!("table", name.to_string());
+            assert_eq!("table2", to.to_string());
+        },
+        _ => unreachable!(),
+    }
+}
+
+#[test]
 fn parse_bad_constraint() {
     let res = parse_sql_statements("ALTER TABLE tab ADD");
     assert_eq!(

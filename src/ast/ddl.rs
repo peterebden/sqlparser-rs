@@ -30,6 +30,13 @@ pub enum AlterTableOperation {
     DropConstraint {
         name: Ident,
     },
+    RenameColumn {
+        column: Ident,
+        to: Ident,
+    },
+    RenameTable {
+        to: Ident,
+    },
 }
 
 impl fmt::Display for AlterTableOperation {
@@ -49,6 +56,8 @@ impl fmt::Display for AlterTableOperation {
                 if *cascade { "CASCADE" } else { "" }
             ),
             AlterTableOperation::DropConstraint { name } => write!(f, "DROP CONSTRAINT {}", name),
+            AlterTableOperation::RenameColumn { column, to } => write!(f, "RENAME COLUMN {} TO {}", column, to),
+            AlterTableOperation::RenameTable { to } => write!(f, "RENAME TO {}", to),
         }
     }
 }

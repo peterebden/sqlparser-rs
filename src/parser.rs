@@ -1176,8 +1176,19 @@ impl Parser {
             } else {
                 return self.expected("a column in ALTER TABLE .. DROP", self.peek_token());
             }
+        } else if self.parse_keyword("RENAME") {
+            if self.parse_keyword("TO") {
+                let to = self.parse_identifier()?;
+                AlterTableOperation::RenameTable{to: to}
+            } else {
+                if self.parse_keyword("COLUMN") {}
+                let column = self.parse_identifier()?;
+                self.expect_keyword("TO")?;
+                let to = self.parse_identifier()?;
+                AlterTableOperation::RenameColumn{column: column, to: to}
+            }
         } else {
-            return self.expected("ADD or DROP after ALTER TABLE", self.peek_token());
+            return self.expected("ADD, DROP or RENAME after ALTER TABLE", self.peek_token());
         };
         Ok(Statement::AlterTable {
             name: table_name,
