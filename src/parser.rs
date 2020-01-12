@@ -961,7 +961,7 @@ impl Parser {
             let mut options = vec![];
             loop {
                 match self.peek_token() {
-                    None | Some(Token::Comma) | Some(Token::RParen) => break,
+                    None | Some(Token::Comma) | Some(Token::RParen) | Some(Token::SemiColon) => break,
                     _ => options.push(self.parse_column_option_def()?),
                 }
             }
