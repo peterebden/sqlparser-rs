@@ -682,8 +682,8 @@ impl fmt::Display for Statement {
                     f,
                     "CREATE {}INDEX{} {} ON {}",
                     if *unique { "UNIQUE " } else { "" },
+                    if *concurrently { " CONCURRENTLY" } else { "" },
                     name,
-                    if *concurrently { "CONCURRENTLY" } else { "" },
                     table
                 )?;
                 if let Some(method) = method {

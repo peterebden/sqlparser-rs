@@ -1098,6 +1098,40 @@ fn parse_create_table_empty() {
 }
 
 #[test]
+fn parse_create_index() {
+    let sql = "CREATE INDEX geo_idx ON uk_cities (lat, lng)";
+    match verified_stmt(sql) {
+        Statement::CreateIndex { name, table, unique, concurrently, method, columns, selection } => {
+            assert_eq!("geo_idx", name.to_string());
+            assert_eq!("uk_cities", table.to_string());
+            assert!(!unique);
+            assert!(!concurrently);
+            assert_eq!(None, method);
+            assert_eq!(vec![Ident::new("lat"), Ident::new("lng")], columns);
+            assert_eq!(None, selection);
+        }
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn parse_create_index_with_options() {
+    let sql = "CREATE UNIQUE INDEX CONCURRENTLY geo_idx ON uk_cities USING gin (lat, lng)";
+    match verified_stmt(sql) {
+        Statement::CreateIndex { name, table, unique, concurrently, method, columns, selection } => {
+            assert_eq!("geo_idx", name.to_string());
+            assert_eq!("uk_cities", table.to_string());
+            assert!(unique);
+            assert!(concurrently);
+            assert_eq!(Some(Ident::new("gin")), method);
+            assert_eq!(vec![Ident::new("lat"), Ident::new("lng")], columns);
+            assert_eq!(None, selection);
+        }
+        _ => unreachable!(),
+    }
+}
+
+#[test]
 fn parse_alter_table_constraints() {
     check_one("CONSTRAINT address_pkey PRIMARY KEY (address_id)");
     check_one("CONSTRAINT uk_task UNIQUE (report_date, task_id)");
