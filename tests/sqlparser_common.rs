@@ -1186,9 +1186,11 @@ fn parse_alter_table_constraints() {
             Statement::AlterTable {
                 name,
                 operation: AlterTableOperation::AddConstraint(constraint),
+                if_exists,
             } => {
                 assert_eq!("tab", name.to_string());
                 assert_eq!(constraint_text, constraint.to_string());
+                assert!(!if_exists);
             }
             _ => unreachable!(),
         }
@@ -1206,12 +1208,14 @@ fn parse_alter_table_add_column() {
             Statement::AlterTable {
                 name,
                 operation: AlterTableOperation::AddColumn(column_def),
+                if_exists,
             } => {
                 assert_eq!("tab", name.to_string());
                 assert_eq!(
                     constraint_text,
                     format!("ADD COLUMN {}", column_def.to_string())
-                )
+                );
+                assert!(!if_exists);
             }
             _ => unreachable!(),
         }
@@ -1232,6 +1236,7 @@ fn parse_alter_table_drop_column() {
                         if_exists,
                         cascade,
                     },
+                if_exists: _,
             } => {
                 assert_eq!("tab", name.to_string());
                 assert_eq!("is_active", column.to_string());
@@ -1249,10 +1254,12 @@ fn parse_alter_table_rename_column() {
         Statement::AlterTable {
             name,
             operation: AlterTableOperation::RenameColumn{column, to},
+            if_exists,
         } => {
             assert_eq!("table", name.to_string());
             assert_eq!("col1", column.to_string());
             assert_eq!("col2", to.to_string());
+            assert!(!if_exists);
         },
         _ => unreachable!(),
     }
@@ -1264,9 +1271,11 @@ fn parse_alter_table_rename_table() {
         Statement::AlterTable {
             name,
             operation: AlterTableOperation::RenameTable{to},
+            if_exists,
         } => {
             assert_eq!("table", name.to_string());
             assert_eq!("table2", to.to_string());
+            assert!(!if_exists);
         },
         _ => unreachable!(),
     }

@@ -1146,6 +1146,11 @@ impl Parser {
         self.expect_keyword("TABLE")?;
         let _ = self.parse_keyword("ONLY");
         let table_name = self.parse_object_name()?;
+        let if_exists = if self.parse_keywords(vec!["IF", "EXISTS"]) {
+            true
+        } else {
+            false
+        };
         let operation = if self.parse_keyword("ADD") {
             if self.parse_keyword("COLUMN") {
                 AlterTableOperation::AddColumn(self.parse_column_def()?)
@@ -1194,7 +1199,8 @@ impl Parser {
         };
         Ok(Statement::AlterTable {
             name: table_name,
-            operation,
+            operation: operation,
+            if_exists: if_exists,
         })
     }
 

@@ -497,6 +497,8 @@ pub enum Statement {
         /// Table name
         name: ObjectName,
         operation: AlterTableOperation,
+        /// An optional `IF EXISTS` clause. (Non-standard.)
+        if_exists: bool,
     },
     /// DROP
     Drop {
@@ -697,8 +699,14 @@ impl fmt::Display for Statement {
                 }
                 Ok(())
             }
-            Statement::AlterTable { name, operation } => {
-                write!(f, "ALTER TABLE {} {}", name, operation)
+            Statement::AlterTable { name, operation, if_exists } => {
+                write!(
+                    f,
+                    "ALTER TABLE {} {}{}",
+                    name,
+                    operation,
+                    if *if_exists { " IF EXISTS" } else { "" },
+                )
             }
             Statement::Drop {
                 object_type,
