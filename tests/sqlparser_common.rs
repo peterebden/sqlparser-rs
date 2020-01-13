@@ -1107,7 +1107,13 @@ fn parse_create_index() {
             assert!(!unique);
             assert!(!concurrently);
             assert_eq!(None, method);
-            assert_eq!(vec![Ident::new("lat"), Ident::new("lng")], columns);
+            assert_eq!(vec![OrderByExpr {
+                expr: Expr::Identifier(Ident::new("lat")),
+                asc: None,
+            }, OrderByExpr {
+                expr: Expr::Identifier(Ident::new("lng")),
+                asc: None,
+            }], columns);
             assert_eq!(None, selection);
         }
         _ => unreachable!(),
@@ -1124,7 +1130,36 @@ fn parse_create_index_with_options() {
             assert!(unique);
             assert!(concurrently);
             assert_eq!(Some(Ident::new("gin")), method);
-            assert_eq!(vec![Ident::new("lat"), Ident::new("lng")], columns);
+            assert_eq!(vec![OrderByExpr {
+                expr: Expr::Identifier(Ident::new("lat")),
+                asc: None
+            }, OrderByExpr {
+                expr: Expr::Identifier(Ident::new("lng")),
+                asc: None
+            }], columns);
+            assert_eq!(None, selection);
+        }
+        _ => unreachable!(),
+    }
+}
+
+#[test]
+fn parse_create_index_with_asc_desc() {
+    let sql = "CREATE UNIQUE INDEX CONCURRENTLY geo_idx ON uk_cities USING gin (lat ASC, lng DESC)";
+    match verified_stmt(sql) {
+        Statement::CreateIndex { name, table, unique, concurrently, method, columns, selection } => {
+            assert_eq!("geo_idx", name.to_string());
+            assert_eq!("uk_cities", table.to_string());
+            assert!(unique);
+            assert!(concurrently);
+            assert_eq!(Some(Ident::new("gin")), method);
+            assert_eq!(vec![OrderByExpr {
+                expr: Expr::Identifier(Ident::new("lat")),
+                asc: Some(true),
+            }, OrderByExpr {
+                expr: Expr::Identifier(Ident::new("lng")),
+                asc: Some(false),
+            }], columns);
             assert_eq!(None, selection);
         }
         _ => unreachable!(),

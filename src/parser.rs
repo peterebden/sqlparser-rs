@@ -921,7 +921,9 @@ impl Parser {
         } else {
             None
         };
-        let columns = self.parse_parenthesized_column_list(Mandatory)?;
+        self.expect_token(&Token::LParen)?;
+        let columns = self.parse_comma_separated(Parser::parse_order_by_expr)?;
+        self.expect_token(&Token::RParen)?;
         let selection = if self.parse_keyword("WHERE") {
             Some(self.parse_expr()?)
         } else {

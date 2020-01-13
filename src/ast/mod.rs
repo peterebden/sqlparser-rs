@@ -488,7 +488,7 @@ pub enum Statement {
         /// Optional method to use
         method: Option<Ident>,
         /// Columns to index
-        columns: Vec<Ident>,
+        columns: Vec<OrderByExpr>,
         /// WHERE
         selection: Option<Expr>,
     },
