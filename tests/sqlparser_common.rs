@@ -1207,15 +1207,19 @@ fn parse_alter_table_add_column() {
         match verified_stmt(&format!("ALTER TABLE tab {}", constraint_text)) {
             Statement::AlterTable {
                 name,
-                operation: AlterTableOperation::AddColumn(column_def),
+                operation: AlterTableOperation::AddColumn{
+                    column,
+                    if_not_exists,
+                },
                 if_exists,
             } => {
                 assert_eq!("tab", name.to_string());
                 assert_eq!(
                     constraint_text,
-                    format!("ADD COLUMN {}", column_def.to_string())
+                    format!("ADD COLUMN {}", column.to_string())
                 );
                 assert!(!if_exists);
+                assert!(!if_not_exists);
             }
             _ => unreachable!(),
         }

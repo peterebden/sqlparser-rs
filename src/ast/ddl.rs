@@ -18,7 +18,10 @@ use std::fmt;
 /// An `ALTER TABLE` (`Statement::AlterTable`) operation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AlterTableOperation {
-    AddColumn(ColumnDef),
+    AddColumn {
+        column: ColumnDef,
+        if_not_exists: bool,
+    },
     /// `ADD <table_constraint>`
     AddConstraint(TableConstraint),
     DropColumn {
@@ -42,7 +45,9 @@ pub enum AlterTableOperation {
 impl fmt::Display for AlterTableOperation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AlterTableOperation::AddColumn(column_def) => write!(f, "ADD COLUMN {}", column_def),
+            AlterTableOperation::AddColumn{column, if_not_exists} => {
+                write!(f, "ADD COLUMN {}{}", column, if *if_not_exists { " IF NOT EXISTS" } else { "" })
+            }
             AlterTableOperation::AddConstraint(c) => write!(f, "ADD {}", c),
             AlterTableOperation::DropColumn {
                 column,

@@ -1153,7 +1153,16 @@ impl Parser {
         };
         let operation = if self.parse_keyword("ADD") {
             if self.parse_keyword("COLUMN") {
-                AlterTableOperation::AddColumn(self.parse_column_def()?)
+                let column = self.parse_column_def()?;
+                let if_not_exists = if self.parse_keywords(vec!["IF", "NOT", "EXISTS"]) {
+                    true
+                } else {
+                    false
+                };
+                AlterTableOperation::AddColumn{
+                    column: column,
+                    if_not_exists: if_not_exists,
+                }
             } else if let Some(constraint) = self.parse_optional_table_constraint()? {
                 AlterTableOperation::AddConstraint(constraint)
             } else {
